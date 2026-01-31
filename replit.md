@@ -87,3 +87,8 @@ Preferred communication style: Simple, everyday language.
 ### File Handling
 - **Multer**: Multipart form data handling for image uploads
 - **Uploads Directory**: Files stored in `uploads/` directory at project root
+
+### Barcode Scanning Features
+- **Product Form Barcode Mode**: "Barkod ile" toggle searches by barcode/stock code and auto-fills form for updating existing products
+- **Barcode Scanner Page**: Real-time barcode lookup with stock entry/exit operations, plus edit and delete product actions
+- **Safety**: Toggling barcode mode off clears form and resets state to prevent unintended updates
