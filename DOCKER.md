@@ -4,8 +4,12 @@ Bu uygulamayı Docker Compose ile çalıştırmak için aşağıdaki adımları 
 
 ## Gereksinimler
 
-- Docker
-- Docker Compose
+- Docker Desktop (Windows/Mac) veya Docker Engine (Linux)
+- Docker Compose (Docker Desktop ile birlikte gelir)
+
+**Windows 10 için:**
+- Docker Desktop for Windows kurulu olmalı
+- WSL 2 backend önerilir (Docker Desktop ayarlarından etkinleştirilebilir)
 
 ## Kurulum ve Çalıştırma
 
@@ -76,8 +80,10 @@ docker-compose up -d --build
 
 ## Volume'ler
 
-- `postgres_data`: PostgreSQL veritabanı verileri
-- `./uploads`: Ürün fotoğrafları (host makinede `uploads` klasörüne kaydedilir)
+- `postgres_data`: PostgreSQL veritabanı verileri (Docker volume olarak saklanır)
+- `./uploads`: Ürün fotoğrafları (host makinede proje klasöründeki `uploads` klasörüne kaydedilir)
+
+**Windows Notu:** Volume path'leri (`./uploads`) Windows'ta da otomatik olarak çalışır. Docker Desktop WSL 2 backend kullanıyorsa path'ler otomatik dönüştürülür.
 
 ## Environment Variables
 

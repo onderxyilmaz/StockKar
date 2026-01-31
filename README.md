@@ -24,6 +24,20 @@ Modern ve kapsamlı bir stok yönetim sistemi. React frontend ve Express backend
 
 ### Docker ile (Önerilen)
 
+**Windows 10 için:**
+1. [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) kurun
+2. Docker Desktop'ı başlatın ve çalıştığından emin olun
+3. Projeyi klonlayın veya indirin:
+```bash
+git clone https://github.com/onderxyilmaz/StockKar.git
+cd StockKar
+```
+4. Docker Compose ile başlatın:
+```bash
+docker-compose up -d
+```
+
+**Linux/Mac için:**
 ```bash
 # Uygulamayı başlat
 docker-compose up -d
@@ -36,6 +50,8 @@ docker-compose down
 ```
 
 Detaylı Docker kurulum bilgileri için [DOCKER.md](./DOCKER.md) dosyasına bakın.
+
+**Windows 10 kullanıcıları için:** Detaylı Windows kurulum kılavuzu için [WINDOWS.md](./WINDOWS.md) dosyasına bakın.
 
 ### Manuel Kurulum
 
