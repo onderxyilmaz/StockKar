@@ -32,7 +32,20 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Trash2,
+  Edit,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { ProductWithRelations, Project } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -95,6 +108,27 @@ export default function BarcodeScanner() {
       toast({
         title: "Hata",
         description: error.message || "İşlem gerçekleştirilirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (productId: string) => {
+      await apiRequest("DELETE", `/api/products/${productId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Ürün silindi",
+        description: "Ürün başarıyla silindi.",
+      });
+      resetScanner();
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Ürün silinirken bir hata oluştu.",
         variant: "destructive",
       });
     },
@@ -262,7 +296,45 @@ export default function BarcodeScanner() {
                     </span>
                   </div>
                 </div>
-                <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
+                <div className="flex flex-col gap-2 shrink-0">
+                  <CheckCircle2 className="h-6 w-6 text-primary mx-auto" />
+                  <div className="flex gap-2">
+                    <Link href={`/products/${foundProduct.id}/edit`}>
+                      <Button variant="outline" size="icon" data-testid="button-edit-product">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="icon" className="text-destructive hover:text-destructive" data-testid="button-delete-product">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Ürünü Sil</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            "{foundProduct.name}" ürününü silmek istediğinizden emin misiniz? 
+                            Bu işlem geri alınamaz ve ürüne ait tüm fotoğraflar ve stok hareketleri de silinecektir.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel data-testid="button-cancel-delete">İptal</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => deleteMutation.mutate(foundProduct.id)}
+                            data-testid="button-confirm-delete"
+                          >
+                            {deleteMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : null}
+                            Evet, Sil
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
