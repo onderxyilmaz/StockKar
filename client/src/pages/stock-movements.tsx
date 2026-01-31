@@ -49,6 +49,8 @@ import {
   Loader2,
   Package,
   Filter,
+  Grid3X3,
+  List,
 } from "lucide-react";
 import type { StockMovementWithRelations, Product, Project } from "@shared/schema";
 import { format } from "date-fns";
@@ -82,6 +84,7 @@ export default function StockMovements() {
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const { data: movements, isLoading: movementsLoading } = useQuery<StockMovementWithRelations[]>({
     queryKey: ["/api/stock-movements"],
@@ -483,19 +486,51 @@ export default function StockMovements() {
               Filtreleri Temizle
             </Button>
           )}
+          <div className="flex gap-1 p-1 bg-muted rounded-md ml-auto">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("grid")}
+              data-testid="button-grid-view"
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("list")}
+              data-testid="button-list-view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {movementsLoading ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="space-y-2 p-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-4" />
+                  <Skeleton className="h-8 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="space-y-2 p-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
       ) : filteredMovements.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -514,6 +549,58 @@ export default function StockMovements() {
             )}
           </CardContent>
         </Card>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredMovements.map((movement) => (
+            <Card key={movement.id} className="hover-elevate" data-testid={`movement-card-${movement.id}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`p-2 rounded-md ${movement.type === 'entry' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
+                    {movement.type === 'entry' ? (
+                      <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    )}
+                  </div>
+                  <Badge variant={movement.type === 'entry' ? 'default' : 'secondary'}>
+                    {movement.type === 'entry' ? '+' : '-'}{movement.quantity}
+                  </Badge>
+                </div>
+                {movement.product && (
+                  <Link href={`/products/${movement.product.id}`} className="hover:underline">
+                    <h3 className="font-semibold text-sm truncate">{movement.product.name}</h3>
+                    <p className="text-xs text-muted-foreground">{movement.product.stockCode}</p>
+                  </Link>
+                )}
+                <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  {movement.project && (
+                    <div className="flex items-center gap-1">
+                      <Package className="h-3 w-3" />
+                      <span className="truncate">{movement.project.name}</span>
+                    </div>
+                  )}
+                  {movement.unitPrice && (
+                    <div>
+                      {new Intl.NumberFormat("tr-TR", {
+                        style: "currency",
+                        currency: "TRY",
+                      }).format(Number(movement.unitPrice))}
+                    </div>
+                  )}
+                  {movement.date && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(movement.date), "d MMM yyyy HH:mm", { locale: tr })}
+                    </div>
+                  )}
+                </div>
+                {movement.notes && (
+                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{movement.notes}</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card>
           <CardContent className="p-0">

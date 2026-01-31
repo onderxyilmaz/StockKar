@@ -38,7 +38,7 @@ import { tr } from "date-fns/locale";
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const { data: products, isLoading: productsLoading } = useQuery<ProductWithRelations[]>({
     queryKey: ["/api/products"],

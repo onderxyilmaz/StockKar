@@ -34,7 +34,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Warehouse, Plus, Edit, Trash2, MapPin, Loader2 } from "lucide-react";
+import { Warehouse, Plus, Edit, Trash2, MapPin, Loader2, Grid3X3, List } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Warehouse as WarehouseType } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +59,7 @@ export default function Warehouses() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<WarehouseType | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const { data: warehouses, isLoading } = useQuery<WarehouseType[]>({
     queryKey: ["/api/warehouses"],
@@ -171,13 +180,32 @@ export default function Warehouses() {
             Depo lokasyonlarınızı yönetin
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openNewDialog} data-testid="button-add-warehouse">
-              <Plus className="h-4 w-4 mr-2" />
-              Yeni Depo
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 p-1 bg-muted rounded-md">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("grid")}
+              data-testid="button-grid-view"
+            >
+              <Grid3X3 className="h-4 w-4" />
             </Button>
-          </DialogTrigger>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("list")}
+              data-testid="button-list-view"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openNewDialog} data-testid="button-add-warehouse">
+                <Plus className="h-4 w-4 mr-2" />
+                Yeni Depo
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -264,21 +292,34 @@ export default function Warehouses() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2 mb-4" />
-                <Skeleton className="h-8 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-4" />
+                  <Skeleton className="h-8 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="space-y-2 p-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
       ) : warehouses?.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -293,7 +334,7 @@ export default function Warehouses() {
             </Button>
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {warehouses?.map((warehouse) => (
             <Card key={warehouse.id} className="hover-elevate" data-testid={`warehouse-card-${warehouse.id}`}>
@@ -349,7 +390,7 @@ export default function Warehouses() {
                         <AlertDialogCancel>İptal</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteMutation.mutate(warehouse.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          className="bg-destructive text-destructive-foreground"
                           data-testid={`button-confirm-delete-warehouse-${warehouse.id}`}
                         >
                           Sil
@@ -362,6 +403,91 @@ export default function Warehouses() {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Depo Adı</TableHead>
+                    <TableHead>Adres</TableHead>
+                    <TableHead>Açıklama</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {warehouses?.map((warehouse) => (
+                    <TableRow key={warehouse.id} data-testid={`warehouse-row-${warehouse.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Warehouse className="h-4 w-4 text-primary" />
+                          <span className="font-medium">{warehouse.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {warehouse.address ? (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate max-w-[200px]">{warehouse.address}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {warehouse.description || <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(warehouse)}
+                            data-testid={`button-edit-warehouse-${warehouse.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                data-testid={`button-delete-warehouse-${warehouse.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Depoyu silmek istediğinize emin misiniz?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bu işlem geri alınamaz. Bu depoya bağlı ürünler varsa işlem başarısız olacaktır.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(warehouse.id)}
+                                  className="bg-destructive text-destructive-foreground"
+                                  data-testid={`button-confirm-delete-warehouse-${warehouse.id}`}
+                                >
+                                  Sil
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -53,7 +53,17 @@ import {
   User,
   Loader2,
   Search,
+  Grid3X3,
+  List,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Project } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +85,7 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -387,20 +398,50 @@ export default function Projects() {
             <SelectItem value="company">Firmalar</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-1 p-1 bg-muted rounded-md">
+          <Button
+            variant={viewMode === "grid" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setViewMode("grid")}
+            data-testid="button-grid-view"
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setViewMode("list")}
+            data-testid="button-list-view"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2 mb-4" />
-                <Skeleton className="h-8 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-4" />
+                  <Skeleton className="h-8 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="space-y-2 p-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
       ) : filteredProjects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -419,7 +460,7 @@ export default function Projects() {
             )}
           </CardContent>
         </Card>
-      ) : (
+      ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredProjects.map((project) => (
             <Card key={project.id} className="hover-elevate" data-testid={`project-card-${project.id}`}>
@@ -495,7 +536,7 @@ export default function Projects() {
                         <AlertDialogCancel>İptal</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => deleteMutation.mutate(project.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          className="bg-destructive text-destructive-foreground"
                           data-testid={`button-confirm-delete-project-${project.id}`}
                         >
                           Sil
@@ -508,6 +549,98 @@ export default function Projects() {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>İsim</TableHead>
+                    <TableHead>Tür</TableHead>
+                    <TableHead>Yetkili Kişi</TableHead>
+                    <TableHead>Telefon</TableHead>
+                    <TableHead>E-posta</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProjects.map((project) => (
+                    <TableRow key={project.id} data-testid={`project-row-${project.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {project.type === "project" ? (
+                            <FolderKanban className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Building2 className="h-4 w-4 text-primary" />
+                          )}
+                          <span className="font-medium">{project.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {project.type === "project" ? "Proje" : "Firma"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {project.contactPerson || <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell>
+                        {project.phone || <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell className="max-w-[150px] truncate">
+                        {project.email || <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(project)}
+                            data-testid={`button-edit-project-${project.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                data-testid={`button-delete-project-${project.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Kaydı silmek istediğinize emin misiniz?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Bu işlem geri alınamaz. Bu kayda bağlı stok hareketleri varsa işlem başarısız olacaktır.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>İptal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(project.id)}
+                                  className="bg-destructive text-destructive-foreground"
+                                  data-testid={`button-confirm-delete-project-${project.id}`}
+                                >
+                                  Sil
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="text-sm text-muted-foreground">
