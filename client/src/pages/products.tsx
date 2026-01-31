@@ -7,6 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,15 +34,18 @@ import {
   Eye,
   Edit,
   ImageIcon,
+  X,
 } from "lucide-react";
 import type { ProductWithRelations, Warehouse } from "@shared/schema";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; productName: string } | null>(null);
 
   const { data: products, isLoading: productsLoading } = useQuery<ProductWithRelations[]>({
     queryKey: ["/api/products"],
@@ -181,7 +188,17 @@ export default function Products() {
             return (
               <Card key={product.id} className="hover-elevate" data-testid={`product-card-${product.id}`}>
                 <CardContent className="p-4">
-                  <div className="aspect-square w-full mb-4 rounded-md bg-muted/50 flex items-center justify-center overflow-hidden">
+                  <div 
+                    className="aspect-square w-full mb-4 rounded-md bg-muted/50 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => {
+                      if (product.mainPhotoId) {
+                        setSelectedPhoto({
+                          url: `/api/photos/${product.mainPhotoId}`,
+                          productName: product.name,
+                        });
+                      }
+                    }}
+                  >
                     {product.mainPhotoId ? (
                       <img
                         src={`/api/photos/${product.mainPhotoId}`}
@@ -252,7 +269,19 @@ export default function Products() {
                     return (
                       <TableRow key={product.id} data-testid={`product-row-${product.id}`}>
                         <TableCell>
-                          <div className="w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center overflow-hidden">
+                          <div 
+                            className={`w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center overflow-hidden ${
+                              product.mainPhotoId ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
+                            }`}
+                            onClick={() => {
+                              if (product.mainPhotoId) {
+                                setSelectedPhoto({
+                                  url: `/api/photos/${product.mainPhotoId}`,
+                                  productName: product.name,
+                                });
+                              }
+                            }}
+                          >
                             {product.mainPhotoId ? (
                               <img
                                 src={`/api/photos/${product.mainPhotoId}`}
@@ -315,6 +344,44 @@ export default function Products() {
         {filteredProducts.length} ürün gösteriliyor
         {(searchQuery || warehouseFilter !== "all") && ` (toplam ${products?.length || 0} ürün)`}
       </div>
+
+      <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="max-w-6xl p-0 bg-transparent border-0 shadow-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200">
+          <AnimatePresence mode="wait">
+            {selectedPhoto && (
+              <motion.div
+                key={selectedPhoto.url}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                className="relative"
+              >
+                <div className="relative bg-background rounded-lg overflow-hidden shadow-2xl">
+                  <img
+                    src={selectedPhoto.url}
+                    alt={selectedPhoto.productName}
+                    className="w-full h-auto max-h-[85vh] object-contain"
+                  />
+                  <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full p-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-white hover:bg-white/20"
+                      onClick={() => setSelectedPhoto(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                    <p className="text-white font-medium text-sm">{selectedPhoto.productName}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

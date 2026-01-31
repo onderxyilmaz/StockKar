@@ -34,7 +34,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Warehouse, Plus, Edit, Trash2, MapPin, Loader2, Grid3X3, List } from "lucide-react";
+import { Warehouse, Plus, Edit, Trash2, MapPin, Loader2, Grid3X3, List, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -43,7 +43,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Warehouse as WarehouseType } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import type { Warehouse as WarehouseType, ProductWithRelations } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -64,6 +65,15 @@ export default function Warehouses() {
   const { data: warehouses, isLoading } = useQuery<WarehouseType[]>({
     queryKey: ["/api/warehouses"],
   });
+
+  const { data: products } = useQuery<ProductWithRelations[]>({
+    queryKey: ["/api/products"],
+  });
+
+  // Her depo için ürün sayısını hesapla
+  const getProductCount = (warehouseId: string) => {
+    return products?.filter((product) => product.warehouseId === warehouseId).length || 0;
+  };
 
   const form = useForm<WarehouseFormValues>({
     resolver: zodResolver(warehouseFormSchema),
@@ -345,6 +355,11 @@ export default function Warehouses() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Ürün Sayısı:</span>
+                  <Badge variant="secondary">{getProductCount(warehouse.id)}</Badge>
+                </div>
                 {warehouse.address && (
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
@@ -411,6 +426,7 @@ export default function Warehouses() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Depo Adı</TableHead>
+                    <TableHead>Ürün Sayısı</TableHead>
                     <TableHead>Adres</TableHead>
                     <TableHead>Açıklama</TableHead>
                     <TableHead className="text-right">İşlemler</TableHead>
@@ -423,6 +439,12 @@ export default function Warehouses() {
                         <div className="flex items-center gap-2">
                           <Warehouse className="h-4 w-4 text-primary" />
                           <span className="font-medium">{warehouse.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <Badge variant="secondary">{getProductCount(warehouse.id)}</Badge>
                         </div>
                       </TableCell>
                       <TableCell>

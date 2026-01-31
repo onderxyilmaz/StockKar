@@ -131,6 +131,9 @@ export async function registerRoutes(
 
   app.post("/api/products", async (req: Request, res: Response) => {
     try {
+      if (!req.body.warehouseId) {
+        return res.status(400).json({ error: "Depo seçimi zorunludur" });
+      }
       const parsed = insertProductSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });

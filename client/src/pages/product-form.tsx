@@ -43,15 +43,15 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const productFormSchema = z.object({
-  stockCode: z.string().min(1, "Stok kodu zorunludur"),
-  name: z.string().min(1, "Ürün adı zorunludur"),
-  productType: z.string().min(1, "Ürün türü zorunludur"),
+  stockCode: z.string({ required_error: "Stok kodu zorunludur" }).min(1, "Stok kodu zorunludur"),
+  name: z.string({ required_error: "Ürün adı zorunludur" }).min(1, "Ürün adı zorunludur"),
+  productType: z.string({ required_error: "Ürün türü zorunludur" }).min(1, "Ürün türü zorunludur"),
   description: z.string().optional(),
-  quantity: z.coerce.number().min(0, "Miktar 0 veya daha fazla olmalıdır"),
+  quantity: z.coerce.number({ required_error: "Miktar zorunludur", invalid_type_error: "Miktar sayı olmalıdır" }).min(0, "Miktar 0 veya daha fazla olmalıdır"),
   barcode: z.string().optional(),
-  warehouseId: z.string().optional(),
-  entryPrice: z.coerce.number().min(0, "Giriş fiyatı 0 veya daha fazla olmalıdır"),
-  exitPrice: z.coerce.number().min(0, "Çıkış fiyatı 0 veya daha fazla olmalıdır"),
+  warehouseId: z.string({ required_error: "Depo seçimi zorunludur" }).min(1, "Depo seçimi zorunludur"),
+  entryPrice: z.coerce.number({ required_error: "Giriş fiyatı zorunludur", invalid_type_error: "Giriş fiyatı sayı olmalıdır" }).min(0, "Giriş fiyatı 0 veya daha fazla olmalıdır"),
+  exitPrice: z.coerce.number({ required_error: "Çıkış fiyatı zorunludur", invalid_type_error: "Çıkış fiyatı sayı olmalıdır" }).min(0, "Çıkış fiyatı 0 veya daha fazla olmalıdır"),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -114,7 +114,7 @@ export default function ProductForm() {
           description: foundProduct.description || "",
           quantity: foundProduct.quantity,
           barcode: foundProduct.barcode || "",
-          warehouseId: foundProduct.warehouseId || "",
+          warehouseId: foundProduct.warehouseId || undefined,
           entryPrice: Number(foundProduct.entryPrice),
           exitPrice: Number(foundProduct.exitPrice),
         });
@@ -157,7 +157,7 @@ export default function ProductForm() {
       description: "",
       quantity: 0,
       barcode: "",
-      warehouseId: "",
+      warehouseId: undefined,
       entryPrice: 0,
       exitPrice: 0,
     },
@@ -169,7 +169,7 @@ export default function ProductForm() {
           description: product.description || "",
           quantity: product.quantity,
           barcode: product.barcode || "",
-          warehouseId: product.warehouseId || "",
+          warehouseId: product.warehouseId || undefined,
           entryPrice: Number(product.entryPrice),
           exitPrice: Number(product.exitPrice),
         }
@@ -188,10 +188,22 @@ export default function ProductForm() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormValues) => {
-      const response = await apiRequest("POST", "/api/products", {
-        ...data,
-        warehouseId: data.warehouseId || null,
-      });
+      if (!data.warehouseId) {
+        throw new Error("Depo seçimi zorunludur");
+      }
+      const payload = {
+        stockCode: data.stockCode,
+        name: data.name,
+        productType: data.productType,
+        description: data.description || null,
+        quantity: Number(data.quantity),
+        barcode: data.barcode || null,
+        warehouseId: data.warehouseId,
+        entryPrice: String(data.entryPrice),
+        exitPrice: String(data.exitPrice),
+      };
+      console.log("Sending payload:", payload);
+      const response = await apiRequest("POST", "/api/products", payload);
       return response.json();
     },
     onSuccess: async (newProduct) => {
@@ -205,23 +217,47 @@ export default function ProductForm() {
       });
       navigate("/products");
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = error?.response || error?.message || "Ürün oluşturulurken bir hata oluştu.";
+      
+      // Parse error message if it contains status code
+      if (errorMessage.includes(":")) {
+        const parts = errorMessage.split(":");
+        if (parts.length > 1) {
+          errorMessage = parts.slice(1).join(":").trim();
+        }
+      }
+      
+      console.error("Create product error:", error);
       toast({
         title: "Hata",
-        description: "Ürün oluşturulurken bir hata oluştu.",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProductFormValues & { targetId?: string }) => {
+      if (!data.warehouseId) {
+        throw new Error("Depo seçimi zorunludur");
+      }
       const id = data.targetId || productId;
       const { targetId, ...updateData } = data;
-      await apiRequest("PATCH", `/api/products/${id}`, {
-        ...updateData,
-        warehouseId: updateData.warehouseId || null,
-      });
+      const payload = {
+        stockCode: updateData.stockCode,
+        name: updateData.name,
+        productType: updateData.productType,
+        description: updateData.description || null,
+        quantity: Number(updateData.quantity),
+        barcode: updateData.barcode || null,
+        warehouseId: updateData.warehouseId,
+        entryPrice: String(updateData.entryPrice),
+        exitPrice: String(updateData.exitPrice),
+      };
+      console.log("Updating payload:", payload);
+      await apiRequest("PATCH", `/api/products/${id}`, payload);
       return id;
     },
     onSuccess: async (id) => {
@@ -239,11 +275,23 @@ export default function ProductForm() {
       });
       navigate(`/products/${id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = error?.response || error?.message || "Ürün güncellenirken bir hata oluştu.";
+      
+      // Parse error message if it contains status code
+      if (errorMessage.includes(":")) {
+        const parts = errorMessage.split(":");
+        if (parts.length > 1) {
+          errorMessage = parts.slice(1).join(":").trim();
+        }
+      }
+      
+      console.error("Update product error:", error);
       toast({
         title: "Hata",
-        description: "Ürün güncellenirken bir hata oluştu.",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
     },
   });
@@ -377,7 +425,7 @@ export default function ProductForm() {
                   description: "",
                   quantity: 0,
                   barcode: "",
-                  warehouseId: "",
+                  warehouseId: undefined,
                   entryPrice: 0,
                   exitPrice: 0,
                 });
@@ -649,15 +697,17 @@ export default function ProductForm() {
                 name="warehouseId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Depo</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Depo *</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger data-testid="select-warehouse">
-                          <SelectValue placeholder="Depo seçin" />
+                          <SelectValue placeholder="Depo seçin (zorunlu)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">Depo Seçilmedi</SelectItem>
                         {warehouses?.map((warehouse) => (
                           <SelectItem key={warehouse.id} value={warehouse.id}>
                             {warehouse.name}
@@ -719,7 +769,7 @@ export default function ProductForm() {
                       </div>
                       {index === mainPhotoIndex && (
                         <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-                          Ana
+                          Kapak
                         </div>
                       )}
                     </div>
@@ -764,7 +814,7 @@ export default function ProductForm() {
                         </div>
                         {photoIndex === mainPhotoIndex && (
                           <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-                            Ana
+                            Kapak
                           </div>
                         )}
                       </div>
