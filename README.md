@@ -1,100 +1,67 @@
-# Stock Manager Pro - Stok Yönetim Sistemi
+# StockKar v2 - Monorepo Yapısı
 
-Modern ve kapsamlı bir stok yönetim sistemi. React frontend ve Express backend ile geliştirilmiştir.
+Modern ve kapsamlı bir stok yönetim sistemi. Monorepo ve feature-based mimari ile yeniden yapılandırılmıştır.
 
-## Özellikler
+## Yapı
 
-- 📦 **Ürün Yönetimi**: Ürün ekleme, düzenleme, silme ve arama
-- 🏢 **Depo Yönetimi**: Çoklu depo desteği
-- 📊 **Stok Takibi**: Giriş/çıkış hareketleri ve stok durumu
-- 📸 **Fotoğraf Yönetimi**: Ürün fotoğrafları (maksimum 5 fotoğraf)
-- 🏷️ **Barkod Desteği**: Barkod ile hızlı ürün arama ve işlem
-- 📈 **Dashboard**: Genel bakış ve istatistikler
-- 🏗️ **Proje/Firma Yönetimi**: Satış hedefleri için proje ve firma takibi
+```
+_stockkar_v2/
+├── backend/      # Express backend (feature-based)
+├── frontend/     # React frontend (feature-based)
+├── shared/       # Shared schema ve types
+├── package.json  # Root workspace config
+└── tsconfig.json # Root TypeScript config
+```
 
-## Teknolojiler
+## Features
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Express.js, Node.js, TypeScript
-- **Veritabanı**: PostgreSQL
-- **ORM**: Drizzle ORM
-- **Validasyon**: Zod
+Her feature kendi modülünde organize edilmiştir:
+
+- **warehouses**: Depo yönetimi
+- **products**: Ürün yönetimi ve fotoğraflar
+- **projects**: Proje/Firma yönetimi
+- **stock-movements**: Stok hareketleri
+- **barcode-scanner**: Barkod okuma (frontend only)
+- **dashboard**: Dashboard (frontend only)
 
 ## Kurulum
 
-### Docker ile (Önerilen)
-
-**Windows 10 için:**
-1. [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) kurun
-2. Docker Desktop'ı başlatın ve çalıştığından emin olun
-3. Projeyi klonlayın veya indirin:
 ```bash
-git clone https://github.com/onderxyilmaz/StockKar.git
-cd StockKar
-```
-4. Docker Compose ile başlatın:
-```bash
-docker-compose up -d
-```
-
-**Linux/Mac için:**
-```bash
-# Uygulamayı başlat
-docker-compose up -d
-
-# Logları görüntüle
-docker-compose logs -f
-
-# Durdur
-docker-compose down
-```
-
-Detaylı Docker kurulum bilgileri için [DOCKER.md](./DOCKER.md) dosyasına bakın.
-
-**Windows 10 kullanıcıları için:** Detaylı Windows kurulum kılavuzu için [WINDOWS.md](./WINDOWS.md) dosyasına bakın.
-
-### Manuel Kurulum
-
-1. **Bağımlılıkları yükleyin:**
-```bash
+# Tüm bağımlılıkları yükle
 npm install
-```
 
-2. **Veritabanını ayarlayın:**
-`.env` dosyası oluşturun:
-```
-DATABASE_URL=postgresql://kullanici:sifre@localhost:5432/stok_yonetim
-PORT=5000
-```
-
-3. **Veritabanı şemasını oluşturun:**
-```bash
-npm run db:push
-```
-
-4. **Uygulamayı çalıştırın:**
-```bash
-npm run dev
-```
-
-Uygulama `http://localhost:5000` adresinde çalışacaktır.
-
-## Geliştirme
-
-```bash
 # Development modunda çalıştır
 npm run dev
 
-# Production build
-npm run build
+# Backend'i ayrı çalıştır
+npm run dev:backend
 
-# Production modunda çalıştır
-npm start
-
-# TypeScript kontrolü
-npm run check
+# Frontend'i ayrı çalıştır
+npm run dev:frontend
 ```
 
-## Lisans
+## Build
 
-MIT License
+```bash
+# Tüm paketleri build et
+npm run build
+
+# Sadece backend'i build et
+npm run build:backend
+
+# Sadece frontend'i build et
+npm run build:frontend
+```
+
+## Database
+
+```bash
+# Schema'yı veritabanına push et
+npm run db:push
+```
+
+## Teknolojiler
+
+- **Backend**: Express.js, TypeScript, Drizzle ORM, PostgreSQL
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Shared**: Drizzle schema, Zod validation
